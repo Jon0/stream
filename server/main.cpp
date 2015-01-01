@@ -19,7 +19,7 @@ class session : public std::enable_shared_from_this<session> {
 public:
 	session(tcp::socket socket)
 		:
-		root_dir("/home/asdf/git/stream/client/"),
+		root_dir("/home/asdf/git/stream/client"),
 		socket_(std::move(socket)) {}
 
 	~session() {
@@ -33,14 +33,14 @@ public:
 private:
 	void do_read() {
 		auto self(shared_from_this());
-		std::cout << "wait for input" << std::endl;
+		std::cout << "wait for request\n" << socket_.available() << std::endl;
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this, self](boost::system::error_code ec, std::size_t length) {
-				std::cout << "request recieved " << length << std::endl;
+				std::cout << "request recieved (" << length << " bytes)" << std::endl;
 				if (!ec) {
 					io::request request(data, length);
 					if (request.location == "/") {
-						write_page("index.html");
+						write_page("/index.html");
 					}
 					else if (request.location == "/stream") {
 						write_stream(length);
@@ -53,7 +53,6 @@ private:
 					std::cout << "error" << std::endl;
 				}
 			});
-		std::cout << "..." << std::endl;
 	}
 
 	void write_page(const std::string &filename) {
@@ -74,9 +73,10 @@ private:
 		std::string header = "";
 		header += "HTTP/1.1 200 OK" + newline;
 		header += "Content-Type: text/html" + newline;
+		header += "Cache-Control: no-cache" + newline;
 		header += newline;
+		header += content;
 		msg(header);
-		msg(content);
 	}
 
 	void write_stream(std::size_t length) {
@@ -88,27 +88,32 @@ private:
 		header += "Cache-Control: no-cache" + newline;
 		header += "retry: 15000" + newline;
 		header += newline;
-		msg(header);
+		msg(header); // use blocking write here?
 
-		//while (true) {
+		while (true) {
 			std::string in;
 			std::cin >> in;
 			std::string content = "data: " + in + newline;
 			content += newline;
-			msg(content);
-		//}
+			msg(content, true);
+		}
 	}
 
-	void msg(std::string s) {
-		std::cout << s;
+	void msg(std::string s, bool read=false) {
+		std::cout << "send reply (" << s.size() << " bytes)" << std::endl;
 		auto self(shared_from_this());
-		boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.length()),
-			[this, self](boost::system::error_code ec, std::size_t) {});
+		boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
+			[this, self, read](boost::system::error_code ec, std::size_t transferred) {
+				std::cout << "sent " << transferred << " bytes" << std::endl;
+				if (!ec && read) {
+					do_read();
+				}
+			});
 	}
 
 	std::string root_dir;
 	tcp::socket socket_;
-	enum { max_length = 2048 };
+	enum { max_length = 1024 };
 	char data [max_length];
 };
 
@@ -143,7 +148,7 @@ private:
 int main(int argc, char* argv[]) {
 	try {
 		if (argc != 2) {
-			std::cerr << "Usage: async_tcp_echo_server <port>\n";
+			std::cerr << "Usage: server <port>\n";
 			return 1;
 		}
 

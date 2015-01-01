@@ -1,4 +1,4 @@
-// 
+// appends recieved text
 
 var source = new EventSource("/stream"); 
 source.onopen = function() {
