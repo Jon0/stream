@@ -1,6 +1,7 @@
 // asio async server example
 
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -8,13 +9,22 @@
 
 #include <boost/asio.hpp>
 
+#include "parser.h"
+
+const std::string newline = "\r\n";
+
 using boost::asio::ip::tcp;
 
 class session : public std::enable_shared_from_this<session> {
 public:
 	session(tcp::socket socket)
-		: 
+		:
+		root_dir("/home/asdf/git/stream/client/"),
 		socket_(std::move(socket)) {}
+
+	~session() {
+		std::cout << "session ended" << std::endl;
+	}
 
 	void start() {
 		do_read();
@@ -24,47 +34,82 @@ private:
 	void do_read() {
 		auto self(shared_from_this());
 		std::cout << "wait for input" << std::endl;
-		socket_.async_read_some(boost::asio::buffer(data_, max_length),
+		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this, self](boost::system::error_code ec, std::size_t length) {
+				std::cout << "request recieved " << length << std::endl;
 				if (!ec) {
-					std::cout.write(data_, length);
-					do_write(length);
+					io::request request(data, length);
+					if (request.location == "/") {
+						write_page("index.html");
+					}
+					else if (request.location == "/stream") {
+						write_stream(length);
+					}
+					else {
+						write_page(request.location);
+					}
+				}
+				else {
+					std::cout << "error" << std::endl;
 				}
 			});
+		std::cout << "..." << std::endl;
 	}
 
-	void do_write(std::size_t length) {
-		do_read();
-		std::string newline = "\r\n";
+	void write_page(const std::string &filename) {
+		std::string content = "";
 
-		std::string content = "data: dsfadsf" + newline;
-
+		std::ifstream file(root_dir + filename);
+		if (file.is_open()) {
+			std::string line;
+			while (getline(file, line)) {
+				content += line + newline;
+			}
+		}
+		else {
+			std::cout << "cannot open " << root_dir << filename << std::endl;
+		}
+		content += newline;
 
 		std::string header = "";
 		header += "HTTP/1.1 200 OK" + newline;
+		header += "Content-Type: text/html" + newline;
+		header += newline;
+		msg(header);
+		msg(content);
+	}
+
+	void write_stream(std::size_t length) {
+		std::string header = "";
+		header += "HTTP/1.1 200 OK" + newline;
 		header += "Content-Type: text/event-stream" + newline;
-		//header += "Content-Length: " + std::to_string(content.length()) + newline;
 		//header += "Transfer-Encoding: chunked" + newline;
 		header += "Connection: keep-alive" + newline;
 		header += "Cache-Control: no-cache" + newline;
 		header += "retry: 15000" + newline;
 		header += newline;
 		msg(header);
-		
-		msg(content);
 
+		//while (true) {
+			std::string in;
+			std::cin >> in;
+			std::string content = "data: " + in + newline;
+			content += newline;
+			msg(content);
+		//}
 	}
 
 	void msg(std::string s) {
 		std::cout << s;
 		auto self(shared_from_this());
 		boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.length()),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/) {});
+			[this, self](boost::system::error_code ec, std::size_t) {});
 	}
 
+	std::string root_dir;
 	tcp::socket socket_;
-	enum { max_length = 1024 };
-	char data_[max_length];
+	enum { max_length = 2048 };
+	char data [max_length];
 };
 
 class server {

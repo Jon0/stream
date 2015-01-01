@@ -1,6 +1,6 @@
-// http://localhost:8080/
+// 
 
-var source = new EventSource("http://www.w3schools.com/html/demo_sse.php"); 
+var source = new EventSource("/stream"); 
 source.onopen = function() {
 	console.log("connection opened");
 }
