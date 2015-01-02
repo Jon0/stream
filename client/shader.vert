@@ -1,7 +1,13 @@
-attribute vec4 a_Position;
+attribute vec4 vert_pos;
+attribute vec4 vert_color;
 
-uniform mat4 uPMatrix;
+uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 model;
+
+varying vec4 color;
 
 void main() {
-	gl_Position = uPMatrix * a_Position;
+	color = vert_color;
+	gl_Position = projection * view * model * vert_pos;
 }

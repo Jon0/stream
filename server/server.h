@@ -1,6 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include <vector>
+
 #include <boost/asio.hpp>
 
 #include "session.h"
@@ -8,6 +10,18 @@
 using boost::asio::ip::tcp;
 
 namespace io {
+
+class session_list {
+public:
+	void push(std::string message) {
+		// send to each session
+	}
+
+private:
+
+	// todo automatically remove completed sessions
+	std::vector<std::shared_ptr<session>> sessions;
+};
 
 class server {
 public:

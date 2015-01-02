@@ -51,16 +51,35 @@ private:
 					else {
 						write_page(request.location);
 					}
+
+					// read next request in same session
+					do_read();
 				}
 				else {
 					std::cout << "error" << std::endl;
 				}
-				do_read();
 			});
 	}
 
 	void write_page(const std::string &filename) {
 		std::string content = "";
+
+		std::size_t ind = filename.find(".");
+		std::string file_type = filename.substr(ind + 1);
+		std::string mime_type;
+
+		// todo use mapping
+		if (file_type == "html") {
+			mime_type = "text/html";
+		}
+		else if (file_type == "js") {
+			mime_type = "text/javascript";
+		}
+		else {
+			mime_type = "text/plain";
+		}
+		std::cout << "extension = " << file_type << " mime type = " << mime_type << std::endl;
+
 
 		// open and read file lines
 		std::ifstream file(root_dir + filename);
@@ -78,7 +97,7 @@ private:
 
 		std::string header = "";
 		header += "HTTP/1.1 200 OK" + newline;
-		header += "Content-Type: text/html" + newline;
+		header += "Content-Type: " + mime_type + newline;
 		header += "Cache-Control: no-cache" + newline;
 		header += "Content-Length: " + std::to_string(content.size()) + newline;
 		header += newline;
@@ -97,13 +116,13 @@ private:
 		header += newline;
 		msg(header); // use blocking write here?
 
-		//while (true) {
-			std::string in = "test";
-			//std::cin >> in;
+		while (true) {
+			std::string in;
+			getline(std::cin, in); // read a whole line
 			std::string content = "data: " + in + newline;
 			content += newline;
 			msg(content);
-		//}
+		}
 	}
 
 	void msg(std::string s, bool read=false) {
