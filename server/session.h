@@ -22,7 +22,7 @@ class session : public std::enable_shared_from_this<session> {
 public:
 	session(tcp::socket socket)
 		:
-		root_dir("/home/asdf/git/stream/client"),
+		root_dir("/u/students/remnanjona/git/stream/client"),
 		socket_(std::move(socket)) {}
 
 	~session() {

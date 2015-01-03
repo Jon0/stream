@@ -1,6 +1,6 @@
 // HelloTriangle.js (c) 2012 matsuda
 
-// main rendering function
+// main setup function
 function setup_webgl() {
 	// Retrieve <canvas> element
 	var canvas = document.getElementById('webgl');
@@ -15,6 +15,8 @@ function setup_webgl() {
 	// Initialize shaders
 	var vert;
 	var frag;
+
+	// todo: init shaders async, or use ajax
 	jQuery.ajaxSetup({async:false});
 	jQuery.get('/shader.vert', function(data) {
 		vert = data;
@@ -42,7 +44,7 @@ function setup_webgl() {
 	mat4.identity(gl.vMatrix);
 	mat4.identity(gl.mMatrix);
 	mat4.perspective(45, 600 / 800, 0.1, 100.0, gl.pMatrix);
-	mat4.lookAt([0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
+	mat4.lookAt([0.0, 5.0, 5.0], [0.0, -1.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
 
 	return gl;
 }
@@ -50,6 +52,7 @@ function setup_webgl() {
 // global setup
 var gl = setup_webgl();
 
+// main rendering function
 function render() {
 	if (!gl) {
 		return;
@@ -60,7 +63,7 @@ function render() {
 	mat4.rotate(gl.mMatrix, 0.1, [0.0, 1.0, 0.0], gl.mMatrix);
 
 
-	//gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+	gl.viewport(0, 0, 600, 400);
 
 	// Specify the color for clearing <canvas>
 	gl.clearColor(0, 0, 0, 1);
@@ -143,6 +146,10 @@ function getShader(gl, id) {
 
 
 function initVertexBuffers(gl) {
+	var obj = load_obj("cube.obj");
+	console.log(obj);
+
+
 	var vertices_loaded = [
 		0.0, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
 		-0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
@@ -150,8 +157,8 @@ function initVertexBuffers(gl) {
 	];
 
 
-	var vertices = new Float32Array(vertices_loaded);
-	var n = 3; // The number of vertices
+	var vertices = new Float32Array(obj);
+	var n = obj.length / 8; // The number of vertices
 
 	// Create a buffer object
 	var vertexBuffer = gl.createBuffer();
