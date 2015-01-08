@@ -20,9 +20,9 @@ const std::string newline = "\r\n";
 
 class session : public std::enable_shared_from_this<session> {
 public:
-	session(tcp::socket socket)
+	session(tcp::socket socket, std::string root)
 		:
-		root_dir("/u/students/remnanjona/git/stream/client"),
+		root_dir(root),
 		socket_(std::move(socket)) {}
 
 	~session() {
@@ -116,13 +116,13 @@ private:
 		header += newline;
 		msg(header); // use blocking write here?
 
-		while (true) {
-			std::string in;
-			getline(std::cin, in); // read a whole line
-			std::string content = "data: " + in + newline;
-			content += newline;
-			msg(content);
-		}
+		//while (true) {
+		std::string in = "testing";
+		//getline(std::cin, in); // read a whole line
+		std::string content = "data: " + in + newline;
+		content += newline;
+		msg(content);
+		//}
 	}
 
 	void msg(std::string s, bool read=false) {

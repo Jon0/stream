@@ -5,6 +5,11 @@ function setup_webgl() {
 	// Retrieve <canvas> element
 	var canvas = document.getElementById('webgl');
 
+	// click to render
+	canvas.onclick = function() {
+		render();
+	}
+
 	// Get the rendering context for WebGL
 	var gl = canvas.getContext("experimental-webgl");
 	if (!gl) {
@@ -37,14 +42,22 @@ function setup_webgl() {
 		return;
 	}
 
+	// set viewport -- todo viewport updates
+	gl.viewport(0, 0, 800, 600);
 	gl.pMatrix = mat4.create();
 	gl.vMatrix = mat4.create();
 	gl.mMatrix = mat4.create();
 	mat4.identity(gl.pMatrix);
 	mat4.identity(gl.vMatrix);
 	mat4.identity(gl.mMatrix);
-	mat4.perspective(45, 600 / 800, 0.1, 100.0, gl.pMatrix);
-	mat4.lookAt([0.0, 5.0, 5.0], [0.0, -1.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
+	mat4.perspective(45, 800 / 600, 0.1, 100.0, gl.pMatrix);
+	mat4.lookAt([0.0, 5.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
+
+	// render params
+	gl.enable(gl.DEPTH_TEST);
+
+	// initial rendering
+	render();
 
 	return gl;
 }
@@ -62,8 +75,6 @@ function render() {
 	//gl.mMatrix.rotate(1.0, 0.0, 1.0, 0.0);
 	mat4.rotate(gl.mMatrix, 0.1, [0.0, 1.0, 0.0], gl.mMatrix);
 
-
-	gl.viewport(0, 0, 600, 400);
 
 	// Specify the color for clearing <canvas>
 	gl.clearColor(0, 0, 0, 1);
@@ -149,16 +160,8 @@ function initVertexBuffers(gl) {
 	var obj = load_obj("cube.obj");
 	console.log(obj);
 
-
-	var vertices_loaded = [
-		0.0, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0,
-		-0.5, -0.5, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
-		0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0
-	];
-
-
 	var vertices = new Float32Array(obj);
-	var n = obj.length / 8; // The number of vertices
+	var n = obj.vertices; // The number of vertices
 
 	// Create a buffer object
 	var vertexBuffer = gl.createBuffer();
@@ -173,6 +176,7 @@ function initVertexBuffers(gl) {
 	gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
 	var vert_pos = gl.getAttribLocation(gl.program, 'vert_pos');
+	var vert_norm = gl.getAttribLocation(gl.program, 'vert_norm');
 	var vert_color = gl.getAttribLocation(gl.program, 'vert_color');
 	if (vert_pos < 0) {
 		console.log('Failed to get the storage location of vert_pos');
@@ -180,11 +184,13 @@ function initVertexBuffers(gl) {
 	}
 
 	// Assign the buffer object to a_Position variable
-	gl.vertexAttribPointer(vert_pos, 4, gl.FLOAT, false, 8*4, 0);
-	gl.vertexAttribPointer(vert_color, 4, gl.FLOAT, false, 8*4, 4*4);
+	gl.vertexAttribPointer(vert_pos, 4, gl.FLOAT, false, obj.vert_size * 4, 0);
+	gl.vertexAttribPointer(vert_norm, 4, gl.FLOAT, false, obj.vert_size * 4, 4*4);
+	gl.vertexAttribPointer(vert_color, 4, gl.FLOAT, false, obj.vert_size * 4, 7*4);
 
 	// Enable the assignment to a_Position variable
 	gl.enableVertexAttribArray(vert_pos);
+	gl.enableVertexAttribArray(vert_norm);
 	gl.enableVertexAttribArray(vert_color);
 
 	return n;
@@ -202,5 +208,4 @@ source.onerror = function() {
 source.onmessage = function(event) {
 	console.log("recieved: "+event.data);
 	render();
-    document.getElementById("result").innerHTML += event.data + "<br>";
 };

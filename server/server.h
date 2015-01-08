@@ -25,13 +25,14 @@ private:
 
 class server {
 public:
-	server(boost::asio::io_service &io_service, short port)
-		: 
+	server(boost::asio::io_service &io_service, short port, std::string root)
+		:
+		root_dir(root),
 		acceptor_(io_service, tcp::endpoint(tcp::v4(), port)),
 		socket_(io_service) {
 
 		boost::system::error_code ec;
-		//socket_.set_option( tcp::socket::keep_alive( true ), ec );
+		socket_.set_option( tcp::socket::keep_alive( true ), ec );
 		do_accept();
 	}
 
@@ -45,13 +46,14 @@ private:
 		acceptor_.async_accept(socket_,
 			[this](boost::system::error_code ec) {
 				if (!ec) {
-					std::cout << "start session" << std::endl;
-					std::make_shared<session>(std::move(socket_))->start();
+					std::cout << "start session " << socket_.remote_endpoint().address().to_string() << std::endl;
+					std::make_shared<session>(std::move(socket_), root_dir)->start();
 				}
 				do_accept();
 			});
 	}
 
+	std::string root_dir;
 	tcp::acceptor acceptor_;
 	tcp::socket socket_;
 };

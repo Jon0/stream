@@ -1,4 +1,5 @@
 precision highp float;
+varying vec3 normal;
 varying vec4 color;
 
 void main() {
