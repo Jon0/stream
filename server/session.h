@@ -33,6 +33,15 @@ public:
 		do_read();
 	}
 
+	/**
+	 * write to the out stream
+	 */
+	void send(std::string in) {
+		std::string content = "data: " + in + newline;
+		content += newline;
+		msg(content);
+	}
+
 private:
 	void do_read() {
 		auto self(shared_from_this());
@@ -105,6 +114,9 @@ private:
 		msg(header);
 	}
 
+	/**
+	 * write stream header to socket
+	 */
 	void write_stream(std::size_t length) {
 		std::string header = "";
 		header += "HTTP/1.1 200 OK" + newline;
@@ -115,14 +127,6 @@ private:
 		header += "retry: 15000" + newline;
 		header += newline;
 		msg(header); // use blocking write here?
-
-		//while (true) {
-		std::string in = "testing";
-		//getline(std::cin, in); // read a whole line
-		std::string content = "data: " + in + newline;
-		content += newline;
-		msg(content);
-		//}
 	}
 
 	void msg(std::string s, bool read=false) {

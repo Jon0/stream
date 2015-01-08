@@ -11,18 +11,6 @@ using boost::asio::ip::tcp;
 
 namespace io {
 
-class session_list {
-public:
-	void push(std::string message) {
-		// send to each session
-	}
-
-private:
-
-	// todo automatically remove completed sessions
-	std::vector<std::shared_ptr<session>> sessions;
-};
-
 class server {
 public:
 	server(boost::asio::io_service &io_service, short port, std::string root)
@@ -36,26 +24,27 @@ public:
 		do_accept();
 	}
 
+
+	void broadcast(std::string message) {
+		// send to each session
+		for (auto &s : sessions) {
+			s->send(message);
+		}
+	}
+
 private:
 
 	/*
 	 * non-blocking function to accept new connections
 	 */
-	void do_accept() {
-		std::cout << "wait for connection" << std::endl;
-		acceptor_.async_accept(socket_,
-			[this](boost::system::error_code ec) {
-				if (!ec) {
-					std::cout << "start session " << socket_.remote_endpoint().address().to_string() << std::endl;
-					std::make_shared<session>(std::move(socket_), root_dir)->start();
-				}
-				do_accept();
-			});
-	}
+	void do_accept();
 
 	std::string root_dir;
 	tcp::acceptor acceptor_;
 	tcp::socket socket_;
+
+	// todo automatically remove completed sessions
+	std::vector<std::shared_ptr<session>> sessions;
 };
 
 } // namespace io

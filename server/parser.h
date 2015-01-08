@@ -12,6 +12,6 @@ public:
 	std::string location;
 };
 
-} // namespace server
+} // namespace io
 
 #endif

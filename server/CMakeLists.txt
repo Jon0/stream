@@ -5,10 +5,10 @@ project (StreamServer)
 set (Test_VERSION_MAJOR 0)
 set (Test_VERSION_MINOR 0)
 
+# std threads
+find_package(Threads REQUIRED)
+
 # find boost libraries
-#set(BOOST_INCLUDEDIR D:/boost_1_54_0/include)
-#set(BOOST_LIBRARYDIR D:/boost_1_54_0/lib)
-#set(Boost_USE_STATIC_LIBS ON)
 set (Boost_USE_STATIC_LIBS ON)
 set (Boost_MULTITHREADED ON)
 set (Boost_USE_STATIC_RUNTIME OFF)
@@ -21,4 +21,4 @@ file(GLOB SRC_FILES
 
 add_definitions(-std=c++11)
 add_executable (ServerMain ${SRC_FILES})
-target_link_libraries (ServerMain ${Boost_LIBRARIES})
+target_link_libraries (ServerMain ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})
