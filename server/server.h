@@ -32,6 +32,10 @@ public:
 		}
 	}
 
+	void update_callback(std::function<void(str_map)> func) {
+		this->update_function = func;
+	}
+
 private:
 
 	/*
@@ -39,7 +43,16 @@ private:
 	 */
 	void do_accept();
 
+	/**
+	 * root directory for web server
+	 */
 	std::string root_dir;
+
+	/**
+	 * callback for revieved updated
+	 */
+	std::function<void(str_map)> update_function;
+
 	tcp::acceptor acceptor_;
 	tcp::socket socket_;
 

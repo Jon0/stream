@@ -60,6 +60,9 @@ function load_obj(filename) {
 		if  (line.substr(0, 2) == 'vn') {
 			indexed_norms[next_norm_ind++] = get_float_values(line.substr(2));
 		}
+		else if (line.substr(0, 1) == 'vt') {
+			//indexed_texts[next_vert_ind++] = get_float_values(line.substr(1));
+		}
 		else if (line.substr(0, 1) == 'v') {
 			indexed_verts[next_vert_ind++] = get_float_values(line.substr(1));
 		}

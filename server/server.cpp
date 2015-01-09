@@ -9,7 +9,7 @@ void server::do_accept() {
 				std::cout << "start session with " << socket_.remote_endpoint().address().to_string() << std::endl;
 
 				// create session and add to list
-				auto s = std::make_shared<session>(std::move(socket_), root_dir);
+				auto s = std::make_shared<session>(std::move(socket_), root_dir, update_function);
 				sessions.push_back(s);
 				s->start();
 			}

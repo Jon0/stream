@@ -16,16 +16,45 @@ std::vector<std::string> split(const std::string &str, char delim) {
     return result;
 }
 
-request::request(const char *data, int length) {
-	auto lines = split(std::string(data, length), '\n');
+request::request(const char *request_data, int length) {
+	auto lines = split(std::string(request_data, length), '\n');
 
+	bool read_data = false;
 	for (auto &line : lines) {
-		auto items = split(line, ' ');
-		if (items.size() > 1 && items[0] == "GET") {
-			this->location = items[1];
-			std::cout << "get request for " << this->location << std::endl;
+		if (read_data) {
+			// read request data
+			auto items = split(line, '&');
+			for (auto &item : items) {
+				auto key_value = split(item, '=');
+				if (key_value.size() >= 2) {
+					this->data[key_value[0]] = key_value[1];
+				}
+			}
 		}
+		else {
+			// read http header
+			auto items = split(line, ' ');
+			if (items.size() > 1 && items[0] == "GET") {
+				this->type = request_type::http_get;
+				this->location = items[1];
+				std::cout << "get request for " << this->location << std::endl;
+			}
+			else if (items.size() > 1 && items[0] == "POST") {
+				this->type = request_type::http_post;
+				this->location = items[1];
+				std::cout << "post request for " << this->location << std::endl;
+			}
+			else if (items.size() == 1) {
+				// end of http header
+				read_data = true;
+			}
+		}
+	}
+
+	// print data
+	for (auto &item : this->data) {
+		std::cout << item.first << " => " << item.second << std::endl;
 	}
 }
 
-} // namespace server
+} // namespace io

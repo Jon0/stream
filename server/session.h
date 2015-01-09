@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -18,47 +19,69 @@ using boost::asio::ip::tcp;
 
 const std::string newline = "\r\n";
 
+/**
+ * tcp connection with a single client
+ */
 class session : public std::enable_shared_from_this<session> {
 public:
-	session(tcp::socket socket, std::string root)
+
+	/**
+	 * create session with socket and root directory of served files
+	 * and a callback function for any updates from the client
+	 */
+	session(tcp::socket socket, std::string root, std::function<void(str_map)> &func)
 		:
+		active(false),
 		root_dir(root),
+		update_function(func),
 		socket_(std::move(socket)) {}
 
 	~session() {
 		std::cout << "session ended" << std::endl;
 	}
 
+	/**
+	 * start responding to http requests
+	 */
 	void start() {
 		do_read();
 	}
 
 	/**
-	 * write to the out stream
+	 * write to the out stream when it is active
 	 */
 	void send(std::string in) {
-		std::string content = "data: " + in + newline;
-		content += newline;
-		msg(content);
+		if (active) {
+			std::string content = "data: " + in + newline;
+			content += newline;
+			msg(content);
+		}
 	}
 
 private:
+
+	/**
+	 * read incoming http requests
+	 */
 	void do_read() {
 		auto self(shared_from_this());
-		std::cout << "wait for request\n" << socket_.available() << std::endl;
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this, self](boost::system::error_code ec, std::size_t length) {
 				std::cout << "request recieved (" << length << " bytes)" << std::endl;
 				if (!ec) {
 					io::request request(data, length);
-					if (request.location == "/") {
-						write_page("/index.html");
-					}
-					else if (request.location == "/stream") {
+					if (request.location == "/stream") {
 						write_stream(length);
+						this->active = true;
 					}
-					else {
-						write_page(request.location);
+					else if (request.type == request_type::http_get) {
+						write_page(get_location(request.location));
+					}
+					else if (request.type == request_type::http_post) {
+						if (update_function) {
+							update_function(request.data);
+						}
+						write_string("wot m8");
 					}
 
 					// read next request in same session
@@ -70,65 +93,24 @@ private:
 			});
 	}
 
-	void write_page(const std::string &filename) {
-		std::string content = "";
-
-		std::size_t ind = filename.find(".");
-		std::string file_type = filename.substr(ind + 1);
-		std::string mime_type;
-
-		// todo use mapping
-		if (file_type == "html") {
-			mime_type = "text/html";
-		}
-		else if (file_type == "js") {
-			mime_type = "text/javascript";
-		}
-		else {
-			mime_type = "text/plain";
-		}
-		std::cout << "extension = " << file_type << " mime type = " << mime_type << std::endl;
-
-
-		// open and read file lines
-		std::ifstream file(root_dir + filename);
-		if (file.is_open()) {
-			std::string line;
-			while (getline(file, line)) {
-				content += line + newline;
-			}
-		}
-		else {
-			// todo 404
-			std::cout << "cannot open " << root_dir << filename << std::endl;
-		}
-		content += newline;
-
-		std::string header = "";
-		header += "HTTP/1.1 200 OK" + newline;
-		header += "Content-Type: " + mime_type + newline;
-		header += "Cache-Control: no-cache" + newline;
-		header += "Content-Length: " + std::to_string(content.size()) + newline;
-		header += newline;
-		header += content;
-		msg(header);
-	}
+	/**
+	 * write a string with an http header to socket
+	 */
+	void write_string(const std::string &str);
 
 	/**
-	 * write stream header to socket
+	 * write a file with an http header to socket
 	 */
-	void write_stream(std::size_t length) {
-		std::string header = "";
-		header += "HTTP/1.1 200 OK" + newline;
-		header += "Content-Type: text/event-stream" + newline;
-		//header += "Transfer-Encoding: chunked" + newline;
-		header += "Connection: keep-alive" + newline;
-		header += "Cache-Control: no-cache" + newline;
-		header += "retry: 15000" + newline;
-		header += newline;
-		msg(header); // use blocking write here?
-	}
+	void write_page(const std::string &filename);
 
+	/**
+	 * write stream http header to socket
+	 */
+	void write_stream(std::size_t length);
+
+	/**
+	 * async socket writing function
+	 */
 	void msg(std::string s, bool read=false) {
 		auto self(shared_from_this());
 		boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
@@ -137,7 +119,30 @@ private:
 			});
 	}
 
+	/**
+	 * map requested locations to files
+	 */
+	std::string get_location(std::string in_location) {
+		if (in_location == "/") {
+			return "/index.html";
+		}
+		else {
+			return in_location;
+		}
+	}
+
+	/**
+	 * should content be pushed
+	 */
+	bool active;
+
+	/**
+	 * root directory for the web server
+	 */
 	std::string root_dir;
+
+	std::function<void(str_map)> &update_function;
+
 	tcp::socket socket_;
 	enum { max_length = 1024 };
 	char data [max_length];

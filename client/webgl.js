@@ -7,7 +7,10 @@ function setup_webgl() {
 
 	// click to render
 	canvas.onclick = function() {
-		render();
+		jQuery.post( "/", { name: "John", time: "2pm", wut: 44 })
+			.done(function( data ) {
+				console.log( "Post Returned: " + data );
+		});
 	}
 
 	// Get the rendering context for WebGL
@@ -50,8 +53,8 @@ function setup_webgl() {
 	mat4.identity(gl.pMatrix);
 	mat4.identity(gl.vMatrix);
 	mat4.identity(gl.mMatrix);
-	mat4.perspective(45, 800 / 600, 0.1, 100.0, gl.pMatrix);
-	mat4.lookAt([0.0, 5.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
+	mat4.perspective(45, 800 / 600, 10.0, 10000.0, gl.pMatrix);
+	mat4.lookAt([0.0, 1500.0, 1500.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
 
 	// render params
 	gl.enable(gl.DEPTH_TEST);
@@ -65,16 +68,24 @@ function setup_webgl() {
 // global setup
 var gl = setup_webgl();
 
+function update(data) {
+
+	// update render state
+	var values = data.split(" ");
+	for (v = 0; v < values.length; ++v) {
+		if (values[v] == "rotate") {
+			var amount = parseFloat(values[v + 1]);
+			mat4.identity(gl.mMatrix);
+			mat4.rotate(gl.mMatrix, amount, [0.0, 1.0, 0.0], gl.mMatrix);
+		}
+	}
+}
+
 // main rendering function
 function render() {
 	if (!gl) {
 		return;
 	}
-
-	// update render state
-	//gl.mMatrix.rotate(1.0, 0.0, 1.0, 0.0);
-	mat4.rotate(gl.mMatrix, 0.1, [0.0, 1.0, 0.0], gl.mMatrix);
-
 
 	// Specify the color for clearing <canvas>
 	gl.clearColor(0, 0, 0, 1);
@@ -157,7 +168,7 @@ function getShader(gl, id) {
 
 
 function initVertexBuffers(gl) {
-	var obj = load_obj("cube.obj");
+	var obj = load_obj("teapot.obj");
 	console.log(obj);
 
 	var vertices = new Float32Array(obj);
@@ -207,5 +218,6 @@ source.onerror = function() {
 
 source.onmessage = function(event) {
 	console.log("recieved: "+event.data);
+	update(event.data);
 	render();
 };

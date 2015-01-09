@@ -17,6 +17,9 @@ int main(int argc, char* argv[]) {
 		io::server s(io_service, std::atoi(argv[1]), std::string(argv[2]));
 
 		io::stream stream(s);
+		s.update_callback([&](io::str_map data) {
+			stream.update(data);
+		});
 		auto t = stream.run(); // non-blocking
 
 		// todo: use multiple run threads
