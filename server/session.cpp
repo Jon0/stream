@@ -52,13 +52,13 @@ void session::write_page(const std::string &filename) {
 	header += newline;
 	msg(header);
 
+
 	int i = 0;
-	int blocksize = 4096;
+	int blocksize = 65536;
 	while (i < content.size()) {
 		msg(content.substr(i, blocksize));
 		i += blocksize;
 	}
-	//header += content;
 	
 }
 
