@@ -38,23 +38,27 @@ public:
 		root_dir(root),
 		update_function(func),
 		write_queue(),
+		queue_lock(),
 		socket_(std::move(socket)) {
 
 			write_thread = std::thread([this]() {
+				std::mutex write_lock;
 				while (true) {
+					this->queue_lock.lock();
 					if (this->write_queue.empty()) {
-						this->write_lock.lock();
+						this->queue_lock.lock();
 						std::cout << "wait for input" << std::endl;
 					}
 
-					this->write_lock.lock();
+					write_lock.lock();
 					std::string &s = this->write_queue.front();
 					boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
-						[this](boost::system::error_code ec, std::size_t transferred) {
-							this->write_lock.unlock();
+						[this, &write_lock](boost::system::error_code ec, std::size_t transferred) {
+							write_lock.unlock();
 							std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
 						});
 					this->write_queue.pop();
+					this->queue_lock.unlock();
 				}
 			});
 		}
@@ -137,8 +141,8 @@ private:
 	 * async socket writing function
 	 */
 	void msg(std::string s, bool read=false) {
-		write_queue.push(s);
-		write_lock.unlock();
+		this->write_queue.push(s);
+		this->queue_lock.unlock();
 	}
 
 	/**
@@ -170,7 +174,7 @@ private:
 	 */
 	std::thread write_thread;
 	std::queue<std::string> write_queue;
-	std::mutex write_lock;
+	std::mutex queue_lock;
 
 	tcp::socket socket_;
 	enum { max_length = 1024 };
