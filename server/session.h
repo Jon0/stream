@@ -6,7 +6,10 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <mutex>
+#include <queue>
 #include <string>
+#include <thread>
 #include <utility>
 
 #include <boost/asio.hpp>
@@ -34,9 +37,33 @@ public:
 		active(false),
 		root_dir(root),
 		update_function(func),
-		socket_(std::move(socket)) {}
+		write_queue(),
+		socket_(std::move(socket)) {
+
+			//this->write_lock.lock();
+			write_thread = std::thread([this]() {
+				while (true) {
+					this->write_lock.lock();
+					if (this->write_queue.empty()) {
+						std::cout << "wait for input" << std::endl;
+						
+						this->write_lock.lock();
+					}
+
+					std::cout << "queue write " << this->write_queue.size() << std::endl;
+					std::string &s = this->write_queue.front();
+					boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
+						[this](boost::system::error_code ec, std::size_t transferred) {
+							std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
+						});
+					this->write_queue.pop();
+					this->write_lock.unlock();
+				}
+			});
+		}
 
 	~session() {
+		write_thread.join();
 		std::cout << "session ended" << std::endl;
 	}
 
@@ -112,11 +139,8 @@ private:
 	 * async socket writing function
 	 */
 	void msg(std::string s, bool read=false) {
-		auto self(shared_from_this());
-		boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
-			[this, self, read](boost::system::error_code ec, std::size_t transferred) {
-				std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
-			});
+		write_queue.push(s);
+		write_lock.unlock();
 	}
 
 	/**
@@ -142,6 +166,13 @@ private:
 	std::string root_dir;
 
 	std::function<void(str_map)> &update_function;
+
+	/**
+	 * only allow one write operation at a time
+	 */
+	std::thread write_thread;
+	std::queue<std::string> write_queue;
+	std::mutex write_lock;
 
 	tcp::socket socket_;
 	enum { max_length = 1024 };
