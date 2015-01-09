@@ -47,7 +47,6 @@ public:
 					this->queue_lock.lock();
 					if (this->write_queue.empty()) {
 						this->queue_lock.lock();
-						std::cout << "wait for input" << std::endl;
 					}
 
 					write_lock.lock();
@@ -55,7 +54,7 @@ public:
 					boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
 						[this, &write_lock](boost::system::error_code ec, std::size_t transferred) {
 							write_lock.unlock();
-							std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
+							//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
 						});
 					this->write_queue.pop();
 					this->queue_lock.unlock();
