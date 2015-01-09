@@ -40,24 +40,21 @@ public:
 		write_queue(),
 		socket_(std::move(socket)) {
 
-			//this->write_lock.lock();
 			write_thread = std::thread([this]() {
 				while (true) {
-					this->write_lock.lock();
 					if (this->write_queue.empty()) {
-						std::cout << "wait for input" << std::endl;
-						
 						this->write_lock.lock();
+						std::cout << "wait for input" << std::endl;
 					}
 
-					std::cout << "queue write " << this->write_queue.size() << std::endl;
+					this->write_lock.lock();
 					std::string &s = this->write_queue.front();
 					boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
 						[this](boost::system::error_code ec, std::size_t transferred) {
+							this->write_lock.unlock();
 							std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
 						});
 					this->write_queue.pop();
-					this->write_lock.unlock();
 				}
 			});
 		}
@@ -115,6 +112,7 @@ private:
 					do_read();
 				}
 				else {
+					active = false;
 					std::cout << "error" << std::endl;
 				}
 			});
