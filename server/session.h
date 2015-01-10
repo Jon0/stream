@@ -13,12 +13,15 @@
 #include <utility>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 #include "parser.h"
 
 namespace io {
 
 using boost::asio::ip::tcp;
+
+using ssl_socket = boost::asio::ssl::stream<tcp::socket>;
 
 const std::string newline = "\r\n";
 
@@ -32,45 +35,30 @@ public:
 	 * create session with socket and root directory of served files
 	 * and a callback function for any updates from the client
 	 */
-	session(tcp::socket socket, std::string root, std::function<void(str_map)> &func)
-		:
-		active(false),
-		root_dir(root),
-		update_function(func),
-		write_queue(),
-		queue_lock(),
-		socket_(std::move(socket)) {
+	session(boost::asio::io_service& io_service, 
+			boost::asio::ssl::context& context, 
+			std::string root, 
+			std::function<void(str_map)> &func);
 
-			write_thread = std::thread([this]() {
-				std::mutex write_lock;
-				while (true) {
-					this->queue_lock.lock();
-					if (this->write_queue.empty()) {
-						this->queue_lock.lock();
-					}
+	~session();
 
-					write_lock.lock();
-					std::string &s = this->write_queue.front();
-					boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
-						[this, &write_lock](boost::system::error_code ec, std::size_t transferred) {
-							write_lock.unlock();
-							//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
-						});
-					this->write_queue.pop();
-					this->queue_lock.unlock();
-				}
-			});
-		}
-
-	~session() {
-		write_thread.join();
-		std::cout << "session ended" << std::endl;
+	ssl_socket::lowest_layer_type &socket() {
+		return socket_.lowest_layer();
 	}
 
 	/**
 	 * start responding to http requests
 	 */
 	void start() {
+		std::cout << "start session with " << socket().remote_endpoint().address().to_string() << std::endl;
+
+		socket_.async_handshake(boost::asio::ssl::stream_base::server,
+			[](boost::system::error_code ec) {
+				if (!ec) {
+					std::cout << "handshake success" << std::endl;
+				}
+			});
+
 		do_read();
 	}
 
@@ -95,6 +83,7 @@ private:
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this, self](boost::system::error_code ec, std::size_t length) {
 				std::cout << "request recieved (" << length << " bytes)" << std::endl;
+				std::cout << std::string(data, length) << std::endl;
 				if (!ec) {
 					io::request request(data, length);
 					if (request.location == "/stream") {
@@ -175,7 +164,7 @@ private:
 	std::queue<std::string> write_queue;
 	std::mutex queue_lock;
 
-	tcp::socket socket_;
+	ssl_socket socket_;
 	enum { max_length = 1024 };
 	char data [max_length];
 };

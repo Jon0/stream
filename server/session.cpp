@@ -2,6 +2,44 @@
 
 namespace io {
 
+session::session(boost::asio::io_service& io_service, 
+		boost::asio::ssl::context& context, 
+		std::string root, 
+		std::function<void(str_map)> &func)
+	:
+	active(false),
+	root_dir(root),
+	update_function(func),
+	write_queue(),
+	queue_lock(),
+	socket_(io_service, context) {
+
+	write_thread = std::thread([this]() {
+		std::mutex write_lock;
+		while (true) {
+			this->queue_lock.lock();
+			if (this->write_queue.empty()) {
+				this->queue_lock.lock();
+			}
+
+			write_lock.lock();
+			std::string &s = this->write_queue.front();
+			boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
+				[this, &write_lock](boost::system::error_code ec, std::size_t transferred) {
+					write_lock.unlock();
+					//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
+				});
+			this->write_queue.pop();
+			this->queue_lock.unlock();
+		}
+	});
+}
+
+session::~session() {
+	write_thread.join();
+	std::cout << "session ended" << std::endl;
+}
+
 void session::write_string(const std::string &str) {
 	std::string header = "";
 	header += "HTTP/1.1 200 OK" + newline;

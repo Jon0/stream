@@ -3,13 +3,13 @@
 namespace io {
 
 void server::do_accept() {
-	acceptor_.async_accept(socket_,
-		[this](boost::system::error_code ec) {
-			if (!ec) {
-				std::cout << "start session with " << socket_.remote_endpoint().address().to_string() << std::endl;
+	auto s = std::make_shared<session>(io_service, context_, root_dir, update_function);
 
-				// create session and add to list
-				auto s = std::make_shared<session>(std::move(socket_), root_dir, update_function);
+	acceptor_.async_accept(s->socket(),
+		[this, s](boost::system::error_code ec) {
+			if (!ec) {
+
+				// start session and add to list
 				sessions.push_back(s);
 				s->start();
 			}

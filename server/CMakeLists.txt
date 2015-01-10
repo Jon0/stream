@@ -8,12 +8,17 @@ set (Test_VERSION_MINOR 0)
 # std threads
 find_package(Threads REQUIRED)
 
+# ssl
+find_package(OpenSSL REQUIRED)
+
 # find boost libraries
 set (Boost_USE_STATIC_LIBS ON)
 set (Boost_MULTITHREADED ON)
 set (Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost COMPONENTS system date_time filesystem iostreams REQUIRED)
-include_directories( ${Boost_INCLUDE_DIRS} )
+
+# additional includes
+include_directories( ${OPENSSL_INCLUDE_DIR} ${Boost_INCLUDE_DIRS} )
 
 file(GLOB SRC_FILES
 	"*.cpp"
@@ -21,4 +26,4 @@ file(GLOB SRC_FILES
 
 add_definitions(-std=c++11)
 add_executable (ServerMain ${SRC_FILES})
-target_link_libraries (ServerMain ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})
+target_link_libraries (ServerMain ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES})
