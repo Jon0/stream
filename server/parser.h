@@ -8,6 +8,14 @@ namespace io {
 
 using str_map = std::unordered_map<std::string, std::string>;
 
+/**
+ * string split function using a char delimiter
+ */
+std::vector<std::string> split(const std::string &str, char delim)
+
+/**
+ * standard http request verbs
+ */
 enum class request_type {
 	http_get,
 	http_post,

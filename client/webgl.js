@@ -7,9 +7,9 @@ function setup_webgl() {
 
 	// click to render
 	canvas.onclick = function() {
-		jQuery.post( "/", { name: "John", time: "2pm", wut: 44 })
-			.done(function( data ) {
-				console.log( "Post Returned: " + data );
+		jQuery.post( "/", { time: "2pm", wut: 44 })
+		.done(function( data ) {
+			console.log( "Post Returned: " + data );
 		});
 	}
 

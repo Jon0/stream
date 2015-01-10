@@ -32,7 +32,8 @@ public:
 		}
 	}
 
-	void update_callback(std::function<void(str_map)> func) {
+	// todo have array for multile callbacks
+	void add_update_callback(std::function<void(str_map)> func) {
 		this->update_function = func;
 	}
 

@@ -13,7 +13,11 @@ class stream {
 public:
 	stream(server &s)
 		:
-		serv(s) {}
+		serv(s) {
+			s.add_update_callback([this](io::str_map data) {
+				this->update(data);
+			});
+		}
 
 	/**
 	 * create and return main thread
@@ -23,7 +27,7 @@ public:
 			while (true) {
 				rotation += 0.02;
 				serv.broadcast("rotate "+std::to_string(rotation));
-				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+				std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 			}	
 		});
 	}
