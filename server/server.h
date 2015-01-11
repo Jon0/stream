@@ -26,11 +26,12 @@ public:
 								| context::no_sslv2
 								| context::single_dh_use);
 
-		context_.set_password_callback(
-			[](std::size_t max_length,  context::password_purpose purpose) -> std::string {
-				return "test"; // very secure
-			});
-		
+		// todo: the keys are not yet encrypted
+		// context_.set_password_callback(
+		// 	[](std::size_t max_length,  context::password_purpose purpose) -> std::string {
+		// 		return "test"; // very secure
+		// 	});
+
 		context_.use_certificate_chain_file("server.crt");
 		context_.use_private_key_file("server.key", context::pem);
 		context_.use_tmp_dh_file("dh512.pem");
