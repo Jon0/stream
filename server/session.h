@@ -53,13 +53,12 @@ public:
 		std::cout << "start session with " << socket().remote_endpoint().address().to_string() << std::endl;
 
 		socket_.async_handshake(boost::asio::ssl::stream_base::server,
-			[](boost::system::error_code ec) {
+			[this](boost::system::error_code ec) {
 				if (!ec) {
 					std::cout << "handshake success" << std::endl;
+					do_read();
 				}
 			});
-
-		do_read();
 	}
 
 	/**

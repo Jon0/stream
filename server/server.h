@@ -28,8 +28,8 @@ public:
 			[](std::size_t max_length,  boost::asio::ssl::context::password_purpose purpose) -> std::string {
 				return "test"; // very secure
 			});
-		context_.use_certificate_chain_file("server.pem");
-		context_.use_private_key_file("server.pem", boost::asio::ssl::context::pem);
+		context_.use_certificate_chain_file("server.crt");
+		context_.use_private_key_file("server.key", boost::asio::ssl::context::pem);
 		context_.use_tmp_dh_file("dh512.pem");
 
 		// start accepting requests
