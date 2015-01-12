@@ -25,6 +25,16 @@ using ssl_socket = boost::asio::ssl::stream<tcp::socket>;
 
 const std::string newline = "\r\n";
 
+class server;
+
+enum class session_state {
+	starting,
+	idle,
+	streaming,
+	stoping,
+	stopped
+};
+
 /**
  * tcp connection with a single client
  */
@@ -35,9 +45,8 @@ public:
 	 * create session with socket and root directory of served files
 	 * and a callback function for any updates from the client
 	 */
-	session(boost::asio::io_service& io_service, 
-			boost::asio::ssl::context& context, 
-			std::string root, 
+	session(server &s,
+			std::string root,
 			std::function<void(str_map)> &func);
 
 	~session();
@@ -56,7 +65,12 @@ public:
 			[this](boost::system::error_code ec) {
 				if (!ec) {
 					std::cout << "handshake success" << std::endl;
+					this->state = session_state::idle;
 					do_read();
+				}
+				else {
+					std::cout << "handshake failure" << std::endl;
+					end();
 				}
 			});
 	}
@@ -65,12 +79,14 @@ public:
 	 * write to the out stream when it is active
 	 */
 	void send(std::string in) {
-		if (active) {
+		if (this->state == session_state::streaming) {
 			std::string content = "data: " + in + newline;
 			content += newline;
 			msg(content);
 		}
 	}
+
+	void end();
 
 private:
 
@@ -81,18 +97,26 @@ private:
 		auto self(shared_from_this());
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this, self](boost::system::error_code ec, std::size_t length) {
+
+				// debug output
 				std::cout << "request recieved (" << length << " bytes)" << std::endl;
-				std::cout << std::string(data, length) << std::endl;
+
 				if (!ec) {
 					io::request request(data, length);
 					if (request.location == "/stream") {
+
+						// write header and set connection to streaming
 						write_stream(length);
-						this->active = true;
+						this->state = session_state::streaming;
 					}
 					else if (request.type == request_type::http_get) {
+
+						// write a page response
 						write_page(get_location(request.location));
 					}
 					else if (request.type == request_type::http_post) {
+
+						// respond to post headers
 						if (update_function) {
 							update_function(request.data);
 						}
@@ -102,9 +126,12 @@ private:
 					// read next request in same session
 					do_read();
 				}
+				else if (ec != boost::asio::error::operation_aborted) {
+					std::cout << "closing connection" << std::endl;
+					this->end();
+				}
 				else {
-					active = false;
-					std::cout << "error" << std::endl;
+					std::cout << "operation aborted" << std::endl;
 				}
 			});
 	}
@@ -145,9 +172,14 @@ private:
 	}
 
 	/**
-	 * should content be pushed
+	 * server which created this
 	 */
-	bool active;
+	server &create_server;
+
+	/**
+	 * current stat of connection
+	 */
+	session_state state;
 
 	/**
 	 * root directory for the web server

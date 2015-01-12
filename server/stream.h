@@ -9,6 +9,9 @@
 
 namespace io {
 
+/**
+ * updates the state of some 3d objects and dispatches to clients
+ */
 class stream {
 public:
 	stream(server &s)

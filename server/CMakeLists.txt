@@ -5,6 +5,9 @@ project (StreamServer)
 set (Test_VERSION_MAJOR 0)
 set (Test_VERSION_MINOR 0)
 
+#copy files
+file( COPY "${PROJECT_SOURCE_DIR}/certificate.sh" DESTINATION "${PROJECT_BINARY_DIR}")
+
 # std threads
 find_package(Threads REQUIRED)
 

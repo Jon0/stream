@@ -13,6 +13,9 @@ namespace io {
 using boost::asio::ip::tcp;
 using boost::asio::ssl::context;	
 
+/**
+ * communicates with clients via http
+ */
 class server {
 public:
 	server(boost::asio::io_service &ios, short port, std::string root)
@@ -48,18 +51,41 @@ public:
 		}
 	}
 
+	void end_session(session *to_remove) {
+		auto position_it = std::find_if(
+			std::begin(sessions),
+			std::end(sessions),
+			[to_remove](std::shared_ptr<session> &e) {
+				return e.get() == to_remove;
+			});
+		sessions.erase(position_it);
+		std::cout << "number of sessions: " << sessions.size() << std::endl;
+	}
+
 	// todo have array for multile callbacks
 	void add_update_callback(std::function<void(str_map)> func) {
 		this->update_function = func;
 	}
 
+	boost::asio::io_service &get_io_service() {
+		return io_service;
+	}
+
+	context &get_context() {
+		return context_;
+	}
+
 private:
-	boost::asio::io_service &io_service;
 
 	/*
 	 * non-blocking function to accept new connections
 	 */
 	void do_accept();
+
+	/**
+	 * io service
+	 */
+	boost::asio::io_service &io_service;
 
 	/**
 	 * root directory for web server

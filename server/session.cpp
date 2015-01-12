@@ -1,25 +1,35 @@
+#include "server.h"
 #include "session.h"
 
 namespace io {
 
-session::session(boost::asio::io_service& io_service, 
-		boost::asio::ssl::context& context, 
+session::session(server &s, 
 		std::string root, 
 		std::function<void(str_map)> &func)
 	:
-	active(false),
+	create_server(s),
+	state(session_state::starting),
 	root_dir(root),
 	update_function(func),
 	write_queue(),
 	queue_lock(),
-	socket_(io_service, context) {
+	socket_(s.get_io_service(), s.get_context()) {
 
 	write_thread = std::thread([this]() {
 		std::mutex write_lock;
 		while (true) {
+
+			// ensure a locked state
 			this->queue_lock.lock();
 			if (this->write_queue.empty()) {
+
+				// wait for unlock elsewhere
 				this->queue_lock.lock();
+			}
+
+			// if stoping then leave
+			if (this->state == session_state::stoping) {
+				return;
 			}
 
 			write_lock.lock();
@@ -36,8 +46,21 @@ session::session(boost::asio::io_service& io_service,
 }
 
 session::~session() {
-	write_thread.join();
 	std::cout << "session ended" << std::endl;
+}
+
+void session::end() {
+
+	// end the write thread
+	this->state = session_state::stoping;
+	this->queue_lock.unlock();
+	this->write_thread.join();
+
+	// close socket
+	this->socket().cancel();
+	this->state = session_state::stopped;
+	this->create_server.end_session(this);
+	std::cout << "session stopped" << std::endl;
 }
 
 void session::write_string(const std::string &str) {
@@ -90,7 +113,7 @@ void session::write_page(const std::string &filename) {
 	header += newline;
 	msg(header);
 
-
+	// todo define in header
 	int i = 0;
 	int blocksize = 65536;
 	while (i < content.size()) {
