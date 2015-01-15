@@ -3,10 +3,13 @@
 
 namespace io {
 
+int session::next_id = 1;
+
 session::session(server &s, 
 		std::string root, 
 		std::function<void(str_map)> &func)
 	:
+	id(next_id++),
 	create_server(s),
 	state(session_state::starting),
 	root_dir(root),
@@ -46,7 +49,7 @@ session::session(server &s,
 }
 
 session::~session() {
-	std::cout << "session ended" << std::endl;
+	std::cout << "session " << id << " ended" << std::endl;
 }
 
 void session::end() {
@@ -60,7 +63,7 @@ void session::end() {
 	this->socket().cancel();
 	this->state = session_state::stopped;
 	this->create_server.end_session(this);
-	std::cout << "session stopped" << std::endl;
+	std::cout << "session " << id << " stopped" << std::endl;
 }
 
 void session::write_string(const std::string &str) {

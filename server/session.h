@@ -59,7 +59,7 @@ public:
 	 * start responding to http requests
 	 */
 	void start() {
-		std::cout << "start session with " << socket().remote_endpoint().address().to_string() << std::endl;
+		std::cout << "start session " << id << " with " << socket().remote_endpoint().address().to_string() << std::endl;
 
 		socket_.async_handshake(boost::asio::ssl::stream_base::server,
 			[this](boost::system::error_code ec) {
@@ -127,7 +127,7 @@ private:
 					do_read();
 				}
 				else if (ec != boost::asio::error::operation_aborted) {
-					std::cout << "closing connection" << std::endl;
+					std::cout << "closing connection " << id << std::endl;
 					this->end();
 				}
 				else {
@@ -170,6 +170,12 @@ private:
 			return in_location;
 		}
 	}
+
+	/**
+	 * unique id for the session
+	 */
+	static int next_id;
+	int id; 
 
 	/**
 	 * server which created this
