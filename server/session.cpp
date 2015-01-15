@@ -80,8 +80,9 @@ void session::write_string(const std::string &str) {
 void session::write_page(const std::string &filename) {
 	std::string content = "";
 
-	std::size_t ind = filename.find(".");
-	std::string file_type = filename.substr(ind + 1);
+	std::string full_path = get_location(filename);
+	std::size_t ind = full_path.find(".");
+	std::string file_type = full_path.substr(ind + 1);
 	std::string mime_type;
 
 	// todo use mapping
@@ -96,7 +97,7 @@ void session::write_page(const std::string &filename) {
 	}
 
 	// open and read file lines
-	std::ifstream file(root_dir + filename);
+	std::ifstream file(full_path);
 	if (file.is_open()) {
 		std::string line;
 		while (getline(file, line)) {
@@ -105,7 +106,7 @@ void session::write_page(const std::string &filename) {
 	}
 	else {
 		// todo 404
-		std::cout << "cannot open " << root_dir << filename << std::endl;
+		std::cout << "cannot open " << full_path << std::endl;
 	}
 
 	std::string header = "";

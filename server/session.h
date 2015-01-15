@@ -112,7 +112,7 @@ private:
 					else if (request.type == request_type::http_get) {
 
 						// write a page response
-						write_page(get_location(request.location));
+						write_page(request.location);
 					}
 					else if (request.type == request_type::http_post) {
 
@@ -142,7 +142,7 @@ private:
 	void write_string(const std::string &str);
 
 	/**
-	 * write a file with an http header to socket
+	 * write a file with an http header to socket, using the requested filename
 	 */
 	void write_page(const std::string &filename);
 
@@ -160,14 +160,14 @@ private:
 	}
 
 	/**
-	 * map requested locations to files
+	 * map requested locations to actual files
 	 */
 	std::string get_location(std::string in_location) {
 		if (in_location == "/") {
-			return "/index.html";
+			return root_dir + "/index.html";
 		}
 		else {
-			return in_location;
+			return root_dir + in_location;
 		}
 	}
 
