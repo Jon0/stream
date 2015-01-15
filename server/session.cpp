@@ -127,7 +127,7 @@ void session::write_page(const std::string &filename) {
 	
 }
 
-void session::write_stream(std::size_t length) {
+void session::write_stream() {
 	std::string header = "";
 	header += "HTTP/1.1 200 OK" + newline;
 	header += "Content-Type: text/event-stream" + newline;

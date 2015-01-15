@@ -43,9 +43,10 @@ public:
 		do_accept();
 	}
 
-
+	/**
+	 * send string to each active streaming session
+	 */
 	void broadcast(std::string message) {
-		// send to each session
 		for (auto &s : sessions) {
 			s->send(message);
 		}

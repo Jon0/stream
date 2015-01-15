@@ -106,7 +106,7 @@ private:
 					if (request.location == "/stream") {
 
 						// write header and set connection to streaming
-						write_stream(length);
+						write_stream();
 						this->state = session_state::streaming;
 					}
 					else if (request.type == request_type::http_get) {
@@ -149,7 +149,7 @@ private:
 	/**
 	 * write stream http header to socket
 	 */
-	void write_stream(std::size_t length);
+	void write_stream();
 
 	/**
 	 * async socket writing function
