@@ -23,6 +23,13 @@ enum class request_type {
 	http_delete
 };
 
+const std::unordered_map<std::string, request_type> request_str = {
+	{"GET", request_type::http_get},
+	{"POST", request_type::http_post},
+	{"PUT", request_type::http_put},
+	{"DELETE", request_type::http_delete},
+};
+
 /**
  * parsing an http request header and data
  */

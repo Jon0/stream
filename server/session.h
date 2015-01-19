@@ -66,6 +66,7 @@ public:
 				if (!ec) {
 					std::cout << "handshake success" << std::endl;
 					this->state = session_state::idle;
+					start_write_thread();
 					do_read();
 				}
 				else {
@@ -94,9 +95,8 @@ private:
 	 * read incoming http requests
 	 */
 	void do_read() {
-		auto self(shared_from_this());
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
-			[this, self](boost::system::error_code ec, std::size_t length) {
+			[this](boost::system::error_code ec, std::size_t length) {
 
 				// debug output
 				std::cout << "request recieved (" << length << " bytes)" << std::endl;
@@ -151,10 +151,13 @@ private:
 	 */
 	void write_stream();
 
+	void start_write_thread();
+
 	/**
 	 * async socket writing function
 	 */
-	void msg(std::string s, bool read=false) {
+	void msg(std::string s) {
+		this->queue_lock.lock();
 		this->write_queue.push(s);
 		this->queue_lock.unlock();
 	}
@@ -164,10 +167,10 @@ private:
 	 */
 	std::string get_location(std::string in_location) {
 		if (in_location == "/") {
-			return root_dir + "/index.html";
+			return "/index.html";
 		}
 		else {
-			return root_dir + in_location;
+			return in_location;
 		}
 	}
 
@@ -175,7 +178,7 @@ private:
 	 * unique id for the session
 	 */
 	static int next_id;
-	int id; 
+	int id;
 
 	/**
 	 * server which created this

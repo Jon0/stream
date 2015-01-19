@@ -34,15 +34,10 @@ request::request(const char *request_data, int length) {
 		else {
 			// read http header
 			auto items = split(line, ' ');
-			if (items.size() > 1 && items[0] == "GET") {
-				this->type = request_type::http_get;
+			if (items.size() > 1 && request_str.count(items[0]) > 0) {
+				this->type = request_str.at(items[0]);
 				this->location = items[1];
-				std::cout << "get request for " << this->location << std::endl;
-			}
-			else if (items.size() > 1 && items[0] == "POST") {
-				this->type = request_type::http_post;
-				this->location = items[1];
-				std::cout << "post request for " << this->location << std::endl;
+				std::cout << items[0] << " request for " << this->location << std::endl;
 			}
 			else if (items.size() == 1) {
 				// end of http header

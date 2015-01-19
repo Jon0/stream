@@ -16,37 +16,7 @@ session::session(server &s,
 	update_function(func),
 	write_queue(),
 	queue_lock(),
-	socket_(s.get_io_service(), s.get_context()) {
-
-	write_thread = std::thread([this]() {
-		std::mutex write_lock;
-		while (true) {
-
-			// ensure a locked state
-			this->queue_lock.lock();
-			if (this->write_queue.empty()) {
-
-				// wait for unlock elsewhere
-				this->queue_lock.lock();
-			}
-
-			// if stoping then leave
-			if (this->state == session_state::stoping) {
-				return;
-			}
-
-			write_lock.lock();
-			std::string &s = this->write_queue.front();
-			boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
-				[this, &write_lock](boost::system::error_code ec, std::size_t transferred) {
-					write_lock.unlock();
-					//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
-				});
-			this->write_queue.pop();
-			this->queue_lock.unlock();
-		}
-	});
-}
+	socket_(s.get_io_service(), s.get_context()) {}
 
 session::~session() {
 	std::cout << "session " << id << " ended" << std::endl;
@@ -56,7 +26,6 @@ void session::end() {
 
 	// end the write thread
 	this->state = session_state::stoping;
-	this->queue_lock.unlock();
 	this->write_thread.join();
 
 	// close socket
@@ -80,9 +49,8 @@ void session::write_string(const std::string &str) {
 void session::write_page(const std::string &filename) {
 	std::string content = "";
 
-	std::string full_path = get_location(filename);
-	std::size_t ind = full_path.find(".");
-	std::string file_type = full_path.substr(ind + 1);
+	std::string file_path = get_location(filename);
+	std::string file_type = file_path.substr(file_path.find(".") + 1);
 	std::string mime_type;
 
 	// todo use mapping
@@ -97,7 +65,7 @@ void session::write_page(const std::string &filename) {
 	}
 
 	// open and read file lines
-	std::ifstream file(full_path);
+	std::ifstream file(root_dir + file_path);
 	if (file.is_open()) {
 		std::string line;
 		while (getline(file, line)) {
@@ -106,7 +74,7 @@ void session::write_page(const std::string &filename) {
 	}
 	else {
 		// todo 404
-		std::cout << "cannot open " << full_path << std::endl;
+		std::cout << "cannot open " << file_path << std::endl;
 	}
 
 	std::string header = "";
@@ -124,7 +92,6 @@ void session::write_page(const std::string &filename) {
 		msg(content.substr(i, blocksize));
 		i += blocksize;
 	}
-	
 }
 
 void session::write_stream() {
@@ -137,6 +104,35 @@ void session::write_stream() {
 	header += "retry: 15000" + newline;
 	header += newline;
 	msg(header); // use blocking write here?
+}
+
+void session::start_write_thread() {
+	write_thread = std::thread([this]() {
+		std::mutex write_lock;
+		while (true) {
+
+			// ensure a message on top
+			while (this->write_queue.empty()) {
+
+				// if stoping then leave
+				if (this->state == session_state::stoping) {
+					return;
+				}
+				std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			}
+
+			write_lock.lock();
+			this->queue_lock.lock();
+			std::string &s = this->write_queue.front();
+			boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
+				[&write_lock](boost::system::error_code ec, std::size_t transferred) {
+					//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
+					write_lock.unlock();
+				});
+			this->write_queue.pop();
+			this->queue_lock.unlock();
+		}
+	});
 }
 
 } // namespace io
