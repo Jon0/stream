@@ -60,7 +60,6 @@ public:
 				return e.get() == to_remove;
 			});
 		sessions.erase(position_it);
-		std::cout << "number of sessions: " << sessions.size() << std::endl;
 	}
 
 	// todo have array for multile callbacks

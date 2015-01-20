@@ -1,13 +1,11 @@
-// HelloTriangle.js (c) 2012 matsuda
-
 // main setup function
 function setup_webgl() {
-	// Retrieve <canvas> element
+	// drawing to webgl canvas
 	var canvas = document.getElementById('webgl');
 
 	// click to render
 	canvas.onclick = function() {
-		jQuery.post( "/", { time: "2pm", wut: 44 })
+		jQuery.post( "/", { test: "test", wut: 44 })
 		.done(function( data ) {
 			console.log( "Post Returned: " + data );
 		});
@@ -47,14 +45,7 @@ function setup_webgl() {
 
 	// set viewport -- todo viewport updates
 	gl.viewport(0, 0, 800, 600);
-	gl.pMatrix = mat4.create();
-	gl.vMatrix = mat4.create();
-	gl.mMatrix = mat4.create();
-	mat4.identity(gl.pMatrix);
-	mat4.identity(gl.vMatrix);
-	mat4.identity(gl.mMatrix);
-	mat4.perspective(45, 800 / 600, 10.0, 10000.0, gl.pMatrix);
-	mat4.lookAt([0.0, 1500.0, 1500.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], gl.vMatrix);
+	gl.camera = new Camera();
 
 	// render params
 	gl.enable(gl.DEPTH_TEST);
@@ -75,8 +66,7 @@ function update(data) {
 	for (v = 0; v < values.length; ++v) {
 		if (values[v] == "rotate") {
 			var amount = parseFloat(values[v + 1]);
-			mat4.identity(gl.mMatrix);
-			mat4.rotate(gl.mMatrix, amount, [0.0, 1.0, 0.0], gl.mMatrix);
+			gl.camera.set(amount);
 		}
 	}
 }
@@ -94,9 +84,9 @@ function render() {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	// Set uniform values
-	gl.uniformMatrix4fv(gl.pMatrixUniform, false, gl.pMatrix);
-	gl.uniformMatrix4fv(gl.vMatrixUniform, false, gl.vMatrix);
-	gl.uniformMatrix4fv(gl.mMatrixUniform, false, gl.mMatrix);
+	gl.uniformMatrix4fv(gl.pMatrixUniform, false, gl.camera.pMatrix);
+	gl.uniformMatrix4fv(gl.vMatrixUniform, false, gl.camera.vMatrix);
+	gl.uniformMatrix4fv(gl.mMatrixUniform, false, gl.camera.mMatrix);
 
 	// Draw the rectangle
 	gl.drawArrays(gl.TRIANGLES, 0, gl.triangle_count);

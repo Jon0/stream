@@ -28,7 +28,7 @@ const std::string newline = "\r\n";
 class server;
 
 enum class session_state {
-	starting,
+	initial,
 	idle,
 	streaming,
 	stoping,
@@ -59,19 +59,24 @@ public:
 	 * start responding to http requests
 	 */
 	void start() {
-		std::cout << "start session " << id << " with " << socket().remote_endpoint().address().to_string() << std::endl;
+		if (this->state != session_state::initial) {
+			std::cout << "error: cannot start again" << std::endl;
+			return;
+		}
+
+		std::cout << "start session with " << socket().remote_endpoint().address().to_string() 
+					<< " (id: " << id << ")" << std::endl;
 
 		socket_.async_handshake(boost::asio::ssl::stream_base::server,
 			[this](boost::system::error_code ec) {
 				if (!ec) {
-					std::cout << "handshake success" << std::endl;
 					this->state = session_state::idle;
 					start_write_thread();
 					do_read();
 				}
 				else {
 					std::cout << "handshake failure" << std::endl;
-					end();
+					this->state = session_state::stopped;
 				}
 			});
 	}
@@ -97,10 +102,6 @@ private:
 	void do_read() {
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this](boost::system::error_code ec, std::size_t length) {
-
-				// debug output
-				std::cout << "request recieved (" << length << " bytes)" << std::endl;
-
 				if (!ec) {
 					io::request request(data, length);
 					if (request.location == "/stream") {
@@ -127,7 +128,6 @@ private:
 					do_read();
 				}
 				else if (ec != boost::asio::error::operation_aborted) {
-					std::cout << "closing connection " << id << std::endl;
 					this->end();
 				}
 				else {
@@ -154,7 +154,7 @@ private:
 	void start_write_thread();
 
 	/**
-	 * async socket writing function
+	 * non-blocking function to queue writing message to client
 	 */
 	void msg(std::string s) {
 		this->queue_lock.lock();

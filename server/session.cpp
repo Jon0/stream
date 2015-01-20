@@ -11,16 +11,14 @@ session::session(server &s,
 	:
 	id(next_id++),
 	create_server(s),
-	state(session_state::starting),
+	state(session_state::initial),
 	root_dir(root),
 	update_function(func),
 	write_queue(),
 	queue_lock(),
 	socket_(s.get_io_service(), s.get_context()) {}
 
-session::~session() {
-	std::cout << "session " << id << " ended" << std::endl;
-}
+session::~session() {}
 
 void session::end() {
 
@@ -31,8 +29,11 @@ void session::end() {
 	// close socket
 	this->socket().cancel();
 	this->state = session_state::stopped;
+
+	// remove from servers list of active clients
 	this->create_server.end_session(this);
-	std::cout << "session " << id << " stopped" << std::endl;
+	std::cout << "end session with " << socket().remote_endpoint().address().to_string() 
+			<< " (id: " << id << ")" << std::endl;
 }
 
 void session::write_string(const std::string &str) {

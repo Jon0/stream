@@ -12,7 +12,6 @@ void server::do_accept() {
 				// start session and add to list
 				sessions.push_back(s);
 				s->start();
-				std::cout << "number of sessions: " << sessions.size() << std::endl;
 			}
 			do_accept();
 		});
