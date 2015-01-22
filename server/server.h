@@ -47,23 +47,35 @@ public:
 	 * send string to each active streaming session
 	 */
 	void broadcast(std::string message) {
+		session_lock.lock();
 		for (auto &s : sessions) {
 			s->send(message);
 		}
+		session_lock.unlock();
 	}
 
 	void end_session(session *to_remove) {
+		session_lock.lock();
 		auto position_it = std::find_if(
 			std::begin(sessions),
 			std::end(sessions),
-			[to_remove](std::shared_ptr<session> &e) {
+			[to_remove](std::shared_ptr<session> e) {
 				return e.get() == to_remove;
 			});
-		sessions.erase(position_it);
+
+
+		if (position_it != std::end(sessions)) {
+			std::cout << "found item -- time to crash" << std::endl;
+			sessions.erase(position_it);
+		}
+		else {
+			std::cout << "server error erasing from session list" << std::endl;
+		}
+		session_lock.unlock();
 	}
 
 	// todo have array for multile callbacks
-	void add_update_callback(std::function<void(str_map)> func) {
+	void add_update_callback(std::function<void(http::str_map)> func) {
 		this->update_function = func;
 	}
 
@@ -95,13 +107,14 @@ private:
 	/**
 	 * callback for revieved updated
 	 */
-	std::function<void(str_map)> update_function;
+	std::function<void(http::str_map)> update_function;
 
 	tcp::acceptor acceptor_;
 	context context_;
 
 
 	// todo automatically remove completed sessions
+	std::mutex session_lock;
 	std::vector<std::shared_ptr<session>> sessions;
 };
 

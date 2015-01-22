@@ -47,7 +47,7 @@ public:
 	 */
 	session(server &s,
 			std::string root,
-			std::function<void(str_map)> &func);
+			std::function<void(http::str_map)> &func);
 
 	~session();
 
@@ -103,19 +103,20 @@ private:
 		socket_.async_read_some(boost::asio::buffer(data, max_length),
 			[this](boost::system::error_code ec, std::size_t length) {
 				if (!ec) {
-					io::request request(data, length);
+					std::cout << "session id: " << id << " -> ";
+					auto request = parse_request(data, length);
 					if (request.location == "/stream") {
 
 						// write header and set connection to streaming
 						write_stream();
 						this->state = session_state::streaming;
 					}
-					else if (request.type == request_type::http_get) {
+					else if (request.type == http::request_type::http_get) {
 
 						// write a page response
 						write_page(request.location);
 					}
-					else if (request.type == request_type::http_post) {
+					else if (request.type == http::request_type::http_post) {
 
 						// respond to post headers
 						if (update_function) {
@@ -156,9 +157,15 @@ private:
 	/**
 	 * non-blocking function to queue writing message to client
 	 */
-	void msg(std::string s) {
+	void msg(const std::string &content) {
+		int i = 0;
+
+		// break into blocks and add to queue
 		this->queue_lock.lock();
-		this->write_queue.push(s);
+		while (i < content.size()) {
+			this->write_queue.push(content.substr(i, max_blocksize));
+			i += max_blocksize;
+		}
 		this->queue_lock.unlock();
 	}
 
@@ -195,7 +202,7 @@ private:
 	 */
 	std::string root_dir;
 
-	std::function<void(str_map)> &update_function;
+	std::function<void(http::str_map)> &update_function;
 
 	/**
 	 * only allow one write operation at a time
@@ -205,7 +212,7 @@ private:
 	std::mutex queue_lock;
 
 	ssl_socket socket_;
-	enum { max_length = 1024 };
+	enum { max_length = 1024, max_blocksize = 65536 };
 	char data [max_length];
 };
 

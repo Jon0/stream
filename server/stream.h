@@ -17,7 +17,7 @@ public:
 	stream(server &s)
 		:
 		serv(s) {
-			s.add_update_callback([this](io::str_map data) {
+			s.add_update_callback([this](http::str_map data) {
 				this->update(data);
 			});
 		}
@@ -25,22 +25,12 @@ public:
 	/**
 	 * create and return main thread
 	 */
-	std::thread run() {
-		return std::thread([this]() {
-			while (true) {
-				rotation += 0.02;
-				serv.broadcast("rotate "+std::to_string(rotation));
-				std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-			}	
-		});
-	}
+	std::thread run();
 
 	/**
 	 * update state of stream
 	 */
-	void update(str_map &data) {
-		rotation -= 1.0f;
-	}
+	void update(http::str_map &data);
 
 private:
 	server &serv;

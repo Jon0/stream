@@ -1,12 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <string>
-#include <unordered_map>
+#include "http.h"
 
 namespace io {
-
-using str_map = std::unordered_map<std::string, std::string>;
 
 /**
  * string split function using a char delimiter
@@ -14,33 +11,9 @@ using str_map = std::unordered_map<std::string, std::string>;
 std::vector<std::string> split(const std::string &str, char delim);
 
 /**
- * standard http request verbs
- */
-enum class request_type {
-	http_get,
-	http_post,
-	http_put,
-	http_delete
-};
-
-const std::unordered_map<std::string, request_type> request_str = {
-	{"GET", request_type::http_get},
-	{"POST", request_type::http_post},
-	{"PUT", request_type::http_put},
-	{"DELETE", request_type::http_delete},
-};
-
-/**
  * parsing an http request header and data
  */
-class request {
-public:
-	request(const char *data, int length);
-
-	request_type type;
-	std::string location;
-	str_map data;
-};
+http::request parse_request(const char *request_data, int length);
 
 } // namespace io
 

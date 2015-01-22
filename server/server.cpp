@@ -10,7 +10,9 @@ void server::do_accept() {
 			if (!ec) {
 
 				// start session and add to list
+				session_lock.lock();
 				sessions.push_back(s);
+				session_lock.unlock();
 				s->start();
 			}
 			do_accept();

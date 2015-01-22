@@ -7,7 +7,7 @@ int session::next_id = 1;
 
 session::session(server &s, 
 		std::string root, 
-		std::function<void(str_map)> &func)
+		std::function<void(http::str_map)> &func)
 	:
 	id(next_id++),
 	create_server(s),
@@ -84,15 +84,8 @@ void session::write_page(const std::string &filename) {
 	header += "Cache-Control: no-cache" + newline;
 	header += "Content-Length: " + std::to_string(content.size()) + newline;
 	header += newline;
+	header += content;
 	msg(header);
-
-	// todo define in header
-	int i = 0;
-	int blocksize = 65536;
-	while (i < content.size()) {
-		msg(content.substr(i, blocksize));
-		i += blocksize;
-	}
 }
 
 void session::write_stream() {
@@ -122,16 +115,27 @@ void session::start_write_thread() {
 				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			}
 
-			write_lock.lock();
+			// lock modifying the queue
 			this->queue_lock.lock();
-			std::string &s = this->write_queue.front();
-			boost::asio::async_write(socket_, boost::asio::buffer(s.c_str(), s.size()),
-				[&write_lock](boost::system::error_code ec, std::size_t transferred) {
-					//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
-					write_lock.unlock();
-				});
+
+			// copy the front item to a container
+			auto &str = this->write_queue.front();
+			std::vector<char> data;
+			std::copy(str.begin(), str.end(), back_inserter(data));
+
 			this->write_queue.pop();
 			this->queue_lock.unlock();
+
+			// lock sending on the socket
+			write_lock.lock();
+			boost::asio::async_write(socket_, boost::asio::buffer(data),
+				[&write_lock](boost::system::error_code ec, std::size_t transferred) {
+					// todo: queue again if failed to send
+					//std::cout << "sent reply (" << transferred << " bytes)" << std::endl;
+
+					// unlocked once message is sent
+					write_lock.unlock();
+				});
 		}
 	});
 }
