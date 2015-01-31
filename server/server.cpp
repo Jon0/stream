@@ -2,8 +2,21 @@
 
 namespace io {
 
+void server::end_session(session *to_remove) {
+	session_lock.lock();
+	sessions.erase(
+		std::remove_if(
+			std::begin(sessions),
+			std::end(sessions),
+			[to_remove](std::shared_ptr<session> e) {
+				return e.get() == to_remove;
+			}), 
+		std::end(sessions));
+	session_lock.unlock();
+}
+
 void server::do_accept() {
-	auto s = std::make_shared<session>(*this, root_dir, update_function);
+	auto s = std::make_shared<session>(*this, update_function);
 
 	acceptor_.async_accept(s->socket(),
 		[this, s](boost::system::error_code ec) {

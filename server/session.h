@@ -46,7 +46,6 @@ public:
 	 * and a callback function for any updates from the client
 	 */
 	session(server &s,
-			std::string root,
 			std::function<void(http::str_map)> &func);
 
 	~session();

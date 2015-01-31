@@ -43,6 +43,10 @@ public:
 		do_accept();
 	}
 
+	std::string root_directory() {
+		return root_dir;
+	}
+
 	/**
 	 * send string to each active streaming session
 	 */
@@ -54,25 +58,10 @@ public:
 		session_lock.unlock();
 	}
 
-	void end_session(session *to_remove) {
-		session_lock.lock();
-		auto position_it = std::find_if(
-			std::begin(sessions),
-			std::end(sessions),
-			[to_remove](std::shared_ptr<session> e) {
-				return e.get() == to_remove;
-			});
-
-
-		if (position_it != std::end(sessions)) {
-			std::cout << "found item -- time to crash" << std::endl;
-			sessions.erase(position_it);
-		}
-		else {
-			std::cout << "server error erasing from session list" << std::endl;
-		}
-		session_lock.unlock();
-	}
+	/**
+	 * remove session from active list
+	 */
+	void end_session(session *to_remove);
 
 	// todo have array for multile callbacks
 	void add_update_callback(std::function<void(http::str_map)> func) {

@@ -5,12 +5,11 @@ namespace io {
 
 int session::next_id = 1;
 
-session::session(server &s, 
-		std::string root, 
+session::session(server &s,
 		std::function<void(http::str_map)> &func)
 	:
 	id(next_id++),
-	create_server(s),
+	create_server(s.root_directory()),
 	state(session_state::initial),
 	root_dir(root),
 	update_function(func),
@@ -18,7 +17,9 @@ session::session(server &s,
 	queue_lock(),
 	socket_(s.get_io_service(), s.get_context()) {}
 
-session::~session() {}
+session::~session() {
+	std::cout << "rm session crash!!" << id << std::endl;
+}
 
 void session::end() {
 
