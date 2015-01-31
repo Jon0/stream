@@ -16,17 +16,30 @@ session::session(server &s,
 	socket_(s.get_io_service(), s.get_context()) {}
 
 session::~session() {
+
+	// ssl sockets do not like being deleted
 	std::cout << "rm session crash (id: " << id << ")" << std::endl;
 }
 
 void session::end() {
 
+	// clear list of messages to write
+	this->queue_lock.lock();
+	std::queue<std::string> empty;
+	std::swap(this->write_queue, empty);
+	this->queue_lock.unlock();
+
 	// end the write thread
 	this->state = session_state::stoping;
 	this->write_thread.join();
 
-	// close socket
+	// close socket and shutdown
 	this->socket().cancel();
+	boost::system::error_code ec;
+	socket_.shutdown(ec);
+	if (ec) {
+		std::cout << "shutdown failure" << std::endl;
+	}
 	this->state = session_state::stopped;
 
 	// remove from servers list of active clients
