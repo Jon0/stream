@@ -9,7 +9,7 @@ session::session(server &s,
 		std::function<void(http::str_map)> &func)
 	:
 	id(next_id++),
-	create_server(s.root_directory()),
+	create_server(s),
 	state(session_state::initial),
 	root_dir(s.root_directory()),
 	update_function(func),
