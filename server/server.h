@@ -76,6 +76,10 @@ public:
 		return context_;
 	}
 
+	std::function<void(http::str_map)> &get_update_function() {
+		return update_function;
+	}
+
 private:
 
 	/*

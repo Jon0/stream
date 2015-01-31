@@ -11,14 +11,12 @@ session::session(server &s,
 	id(next_id++),
 	create_server(s),
 	state(session_state::initial),
-	root_dir(s.root_directory()),
-	update_function(func),
 	write_queue(),
 	queue_lock(),
 	socket_(s.get_io_service(), s.get_context()) {}
 
 session::~session() {
-	std::cout << "rm session crash!!" << id << std::endl;
+	std::cout << "rm session crash (id: " << id << ")" << std::endl;
 }
 
 void session::end() {
@@ -35,6 +33,44 @@ void session::end() {
 	this->create_server.end_session(this);
 	std::cout << "end session with " << socket().remote_endpoint().address().to_string() 
 			<< " (id: " << id << ")" << std::endl;
+}
+
+void session::do_read() {
+	socket_.async_read_some(boost::asio::buffer(data, max_length),
+		[this](boost::system::error_code ec, std::size_t length) {
+			if (!ec) {
+				std::cout << "session id: " << id << " -> ";
+				auto request = parse_request(data, length);
+				if (request.location == "/stream") {
+
+					// write header and set connection to streaming
+					write_stream();
+					this->state = session_state::streaming;
+				}
+				else if (request.type == http::request_type::http_get) {
+
+					// write a page response
+					write_page(request.location);
+				}
+				else if (request.type == http::request_type::http_post) {
+
+					// respond to post headers
+					if (create_server.get_update_function()) {
+						create_server.get_update_function()(request.data);
+					}
+					write_string("wot m8");
+				}
+
+				// read next request in same session
+				do_read();
+			}
+			else if (ec != boost::asio::error::operation_aborted) {
+				this->end();
+			}
+			else {
+				std::cout << "operation aborted" << std::endl;
+			}
+		});
 }
 
 void session::write_string(const std::string &str) {
@@ -67,7 +103,7 @@ void session::write_page(const std::string &filename) {
 	}
 
 	// open and read file lines
-	std::ifstream file(root_dir + file_path);
+	std::ifstream file(create_server.root_directory() + file_path);
 	if (file.is_open()) {
 		std::string line;
 		while (getline(file, line)) {

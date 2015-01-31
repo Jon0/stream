@@ -98,43 +98,7 @@ private:
 	/**
 	 * read incoming http requests
 	 */
-	void do_read() {
-		socket_.async_read_some(boost::asio::buffer(data, max_length),
-			[this](boost::system::error_code ec, std::size_t length) {
-				if (!ec) {
-					std::cout << "session id: " << id << " -> ";
-					auto request = parse_request(data, length);
-					if (request.location == "/stream") {
-
-						// write header and set connection to streaming
-						write_stream();
-						this->state = session_state::streaming;
-					}
-					else if (request.type == http::request_type::http_get) {
-
-						// write a page response
-						write_page(request.location);
-					}
-					else if (request.type == http::request_type::http_post) {
-
-						// respond to post headers
-						if (update_function) {
-							update_function(request.data);
-						}
-						write_string("wot m8");
-					}
-
-					// read next request in same session
-					do_read();
-				}
-				else if (ec != boost::asio::error::operation_aborted) {
-					this->end();
-				}
-				else {
-					std::cout << "operation aborted" << std::endl;
-				}
-			});
-	}
+	void do_read();
 
 	/**
 	 * write a string with an http header to socket
@@ -195,13 +159,6 @@ private:
 	 * current stat of connection
 	 */
 	session_state state;
-
-	/**
-	 * root directory for the web server
-	 */
-	std::string root_dir;
-
-	std::function<void(http::str_map)> &update_function;
 
 	/**
 	 * only allow one write operation at a time
