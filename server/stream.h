@@ -9,6 +9,12 @@
 
 namespace io {
 
+struct stream_object {
+	unsigned int id;
+	double u, v, w, x, y, z;
+	double du, dv, dw, dx, dy, dz;
+};
+
 /**
  * updates the state of some 3d objects and dispatches to clients
  */
@@ -35,9 +41,14 @@ public:
 private:
 	server &serv;
 
-	float rotation = 0.0f;
 };
 
 } // namespace io
+
+namespace std {
+
+string to_string(const io::stream_object &);
+
+}
 
 #endif

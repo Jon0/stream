@@ -10,9 +10,11 @@ var Camera = function() {
 	mat4.perspective(45, 800 / 600, 10.0, 10000.0, this.pMatrix);
 	mat4.lookAt([0.0, 1500.0, 1500.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], this.vMatrix);
 
-	this.set = function(amount) {
+	this.set = function(u, v, w) {
 		mat4.identity(this.mMatrix);
-		mat4.rotate(this.mMatrix, amount, [0.0, 1.0, 0.0], this.mMatrix);
+		mat4.rotate(this.mMatrix, u, [1.0, 0.0, 0.0], this.mMatrix);
+		mat4.rotate(this.mMatrix, v, [0.0, 1.0, 0.0], this.mMatrix);
+		mat4.rotate(this.mMatrix, w, [0.0, 0.0, 1.0], this.mMatrix);
 	}
 
 } 

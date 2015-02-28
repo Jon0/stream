@@ -58,15 +58,25 @@ function setup_webgl() {
 
 // global setup
 var gl = setup_webgl();
+var objs = {};
 
 function update(data) {
 
 	// update render state
 	var values = data.split(" ");
-	for (v = 0; v < values.length; ++v) {
-		if (values[v] == "rotate") {
-			var amount = parseFloat(values[v + 1]);
-			gl.camera.set(amount);
+	for (v = 0; v < values.length;) {
+		if (values[v].length == 0) {
+			v++;
+		}
+		else {
+			var index = values[v++];
+			if (objs[index] === undefined) {
+				console.log("new object "+index);
+				objs[index] = new Object();
+			}
+			objs[index].u = parseFloat(values[v++]);
+			objs[index].v = parseFloat(values[v++]);
+			objs[index].w = parseFloat(values[v++]);
 		}
 	}
 }
@@ -86,10 +96,15 @@ function render() {
 	// Set uniform values
 	gl.uniformMatrix4fv(gl.pMatrixUniform, false, gl.camera.pMatrix);
 	gl.uniformMatrix4fv(gl.vMatrixUniform, false, gl.camera.vMatrix);
-	gl.uniformMatrix4fv(gl.mMatrixUniform, false, gl.camera.mMatrix);
 
-	// Draw the rectangle
-	gl.drawArrays(gl.TRIANGLES, 0, gl.triangle_count);
+
+	for (var id in objs) {
+		gl.camera.set(objs[id].u, objs[id].v, objs[id].w);
+		gl.uniformMatrix4fv(gl.mMatrixUniform, false, gl.camera.mMatrix);
+
+		// render object
+		gl.drawArrays(gl.TRIANGLES, 0, gl.triangle_count);
+	}
 }
 
 function initShaders(gl, vert_source, frag_source) {

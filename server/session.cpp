@@ -15,11 +15,7 @@ session::session(server &s,
 	queue_lock(),
 	socket_(s.get_io_service(), s.get_context()) {}
 
-session::~session() {
-
-	// ssl sockets do not like being deleted
-	std::cout << "rm session crash (id: " << id << ")" << std::endl;
-}
+session::~session() {}
 
 void session::end() {
 	std::cout << "end session with " << socket().remote_endpoint().address().to_string() 
@@ -69,7 +65,7 @@ void session::do_read() {
 					write_stream();
 					this->state = session_state::streaming;
 				}
-				if (request.location == "/status") {
+				else if (request.location == "/status") {
 
 					// write status page
 					write_string(this->create_server.status());
