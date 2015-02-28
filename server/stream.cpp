@@ -2,7 +2,7 @@
 
 namespace io {
 
-std::thread stream::run() {
+std::thread stream::start_thread() {
 	return std::thread([this]() {
 		while (true) {
 			rotation += 0.02;

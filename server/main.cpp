@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 
 		// start the stream system
 		io::stream stream(s);
-		auto t = stream.run(); // non-blocking
+		auto t = stream.start_thread(); // non-blocking
 
 		// todo: use multiple run threads
 		io_service.run(); // blocks until exit

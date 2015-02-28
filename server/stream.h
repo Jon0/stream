@@ -25,7 +25,7 @@ public:
 	/**
 	 * create and return main thread
 	 */
-	std::thread run();
+	std::thread start_thread();
 
 	/**
 	 * update state of stream

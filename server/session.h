@@ -66,18 +66,18 @@ public:
 		std::cout << "start session with " << socket().remote_endpoint().address().to_string() 
 					<< " (id: " << id << ")" << std::endl;
 
-		socket_.async_handshake(boost::asio::ssl::stream_base::server,
-			[this](boost::system::error_code ec) {
-				if (!ec) {
-					this->state = session_state::idle;
-					start_write_thread();
-					do_read();
-				}
-				else {
-					std::cout << "handshake failure" << std::endl;
-					this->state = session_state::stopped;
-				}
-			});
+
+		boost::system::error_code ec;
+		socket_.handshake(boost::asio::ssl::stream_base::server, ec);
+		if (!ec) {
+			this->state = session_state::idle;
+			start_write_thread();
+			do_read();
+		}
+		else {
+			std::cout << "handshake failure" << std::endl;
+			this->state = session_state::stopped;
+		}
 	}
 
 	/**

@@ -22,6 +22,8 @@ session::~session() {
 }
 
 void session::end() {
+	std::cout << "end session with " << socket().remote_endpoint().address().to_string() 
+			<< " (id: " << id << ")" << std::endl;
 
 	// clear list of messages to write
 	this->queue_lock.lock();
@@ -31,21 +33,24 @@ void session::end() {
 
 	// end the write thread
 	this->state = session_state::stoping;
-	this->write_thread.join();
+	try {
+		this->write_thread.join();
+	}
+	catch (...) {
+		std::cout << "error joining thread" << std::endl;
+	}
 
 	// close socket and shutdown
 	this->socket().cancel();
 	boost::system::error_code ec;
 	socket_.shutdown(ec);
 	if (ec) {
-		std::cout << "shutdown failure" << std::endl;
+		std::cout << "shutdown failure" << " (id: " << id << ")" << std::endl;
 	}
 	this->state = session_state::stopped;
 
 	// remove from servers list of active clients
 	this->create_server.end_session(this);
-	std::cout << "end session with " << socket().remote_endpoint().address().to_string() 
-			<< " (id: " << id << ")" << std::endl;
 }
 
 void session::do_read() {
@@ -78,6 +83,7 @@ void session::do_read() {
 				do_read();
 			}
 			else if (ec != boost::asio::error::operation_aborted) {
+				std::cout << "connection closed" << " (id: " << id << ")" << std::endl;
 				this->end();
 			}
 			else {
