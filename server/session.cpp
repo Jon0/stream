@@ -53,6 +53,10 @@ void session::end() {
 	this->create_server.end_session(this);
 }
 
+std::string session::description() {
+	return std::to_string(id) + " : " + socket().remote_endpoint().address().to_string();
+}
+
 void session::do_read() {
 	socket_.async_read_some(boost::asio::buffer(data, max_length),
 		[this](boost::system::error_code ec, std::size_t length) {
@@ -64,6 +68,11 @@ void session::do_read() {
 					// write header and set connection to streaming
 					write_stream();
 					this->state = session_state::streaming;
+				}
+				if (request.location == "/status") {
+
+					// write status page
+					write_string(this->create_server.status());
 				}
 				else if (request.type == http::request_type::http_get) {
 

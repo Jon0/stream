@@ -80,6 +80,8 @@ public:
 		return update_function;
 	}
 
+	std::string status();
+
 private:
 
 	/*

@@ -93,6 +93,8 @@ public:
 
 	void end();
 
+	std::string description();
+
 private:
 
 	/**
