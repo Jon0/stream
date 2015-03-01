@@ -117,7 +117,7 @@ function render() {
 			// render object
 			gl.drawArrays(gl.TRIANGLES, 0, gl.triangle_count);
 		}
-		gl.transition += 0.05;
+		gl.transition += 0.03;
 
 		if (gl.transition > 1.0) {
 			for (var i = 0; i < gl.target_frame; ++i) {
