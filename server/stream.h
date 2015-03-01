@@ -41,6 +41,10 @@ public:
 private:
 	server &serv;
 
+	// objects to stream
+	std::vector<stream_object> objs;
+	double dampen_value, force_value;
+
 };
 
 } // namespace io

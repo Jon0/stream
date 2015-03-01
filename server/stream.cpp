@@ -9,20 +9,22 @@ double randf(double scale) {
 }
 
 std::thread stream::start_thread() {
+	for (unsigned int i = 0; i < 3; ++i) {
+		this->objs.push_back(stream_object{i});
+	}
+	this->dampen_value = 0.95;
+	this->force_value = 1.5;
+
 	return std::thread([this]() {
-		std::vector<stream_object> objs;
-		for (unsigned int i = 0; i < 3; ++i) {
-			objs.push_back(stream_object{i});
-		}
 		while (true) {
 			std::string update;
-			for (auto &o : objs) {
-				o.du += randf(0.05);
-				o.dv += randf(0.05);
-				o.dw += randf(0.05);
-				o.dx += randf(0.05);
-				o.dy += randf(0.05);
-				o.dz += randf(0.05);
+			for (auto &o : this->objs) {
+				o.du *= dampen_value;
+				o.dv *= dampen_value;
+				o.dw *= dampen_value;
+				o.dx *= dampen_value;
+				o.dy *= dampen_value;
+				o.dz *= dampen_value;
 				o.u += o.du;
 				o.v += o.dv;
 				o.w += o.dw;
@@ -39,7 +41,14 @@ std::thread stream::start_thread() {
 }
 
 void stream::update(http::str_map &data) {
-	// todo
+	for (auto &o : this->objs) {
+		o.du += randf(this->force_value);
+		o.dv += randf(this->force_value);
+		o.dw += randf(this->force_value);
+		o.dx += randf(this->force_value);
+		o.dy += randf(this->force_value);
+		o.dz += randf(this->force_value);
+	}
 } 
 
 } // namespace io
