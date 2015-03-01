@@ -50,7 +50,10 @@ void session::end() {
 }
 
 std::string session::description() {
-	return std::to_string(id) + " : " + socket().remote_endpoint().address().to_string();
+	auto end = std::chrono::high_resolution_clock::now();
+	auto sec = std::chrono::duration_cast<std::chrono::seconds>(end - start_time).count();
+	return std::to_string(id) + " : " + socket().remote_endpoint().address().to_string() + " ("
+		+ std::to_string(sec) + " seconds)";
 }
 
 void session::do_read() {

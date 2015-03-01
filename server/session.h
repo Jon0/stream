@@ -2,6 +2,7 @@
 #define SESSION_H
 
 #include <cstdlib>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -63,6 +64,7 @@ public:
 			return;
 		}
 
+		start_time = std::chrono::high_resolution_clock::now();
 		std::cout << "start session with " << socket().remote_endpoint().address().to_string() 
 					<< " (id: " << id << ")" << std::endl;
 
@@ -172,6 +174,8 @@ private:
 	ssl_socket socket_;
 	enum { max_length = 1024, max_blocksize = 65536 };
 	char data [max_length];
+
+	std::chrono::time_point<std::chrono::system_clock> start_time;
 };
 
 } // namespace io
