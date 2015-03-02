@@ -9,6 +9,8 @@ double randf(double scale) {
 }
 
 std::thread stream::start_thread() {
+	this->update_millisec = 400;
+
 	for (unsigned int i = 0; i < 3; ++i) {
 		this->objs.push_back(stream_object{i});
 	}
@@ -35,7 +37,7 @@ std::thread stream::start_thread() {
 			}
 
 			serv.broadcast(update);
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			std::this_thread::sleep_for(std::chrono::milliseconds(this->update_millisec));
 		}	
 	});
 }

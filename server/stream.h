@@ -41,6 +41,9 @@ public:
 private:
 	server &serv;
 
+	// rate to push updates
+	unsigned int update_millisec;
+
 	// objects to stream
 	std::vector<stream_object> objs;
 	double dampen_value, force_value;

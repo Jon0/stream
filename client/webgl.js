@@ -1,6 +1,8 @@
 // global setup
 var gl = setup_webgl();
 var queue = [];
+var frames_per_update = 0.0;
+var inc_rate = 0.0;
 
 // main setup function
 function setup_webgl() {
@@ -83,11 +85,22 @@ function update(data) {
 		}
 	}
 	queue.push(objs);
+
+	// set increment rate to match updates
+	if (frames_per_update > 0.0) {
+
+		// try have a smooth increment across frames
+		inc_rate = 0.5 * inc_rate + 0.5 * (1.0 / frames_per_update);
+		console.log("frames = "+frames_per_update+" rate = "+inc_rate);
+		frames_per_update = 0.0;
+	}
 }
 
 // main rendering function
 function render() {
 	if (!gl) {
+
+		// try again
 		setTimeout(render, 1000);
 		return;
 	}
@@ -117,7 +130,7 @@ function render() {
 			// render object
 			gl.drawArrays(gl.TRIANGLES, 0, gl.triangle_count);
 		}
-		gl.transition += 0.04;
+		gl.transition += inc_rate;
 
 		if (gl.transition > 1.0) {
 			for (var i = 0; i < gl.target_frame; ++i) {
@@ -127,11 +140,13 @@ function render() {
 			
 			// update next targe frame
 			gl.transition = 0.0;
-			gl.target_frame = queue.length - 1;
+			gl.target_frame = Math.round(queue.length / 2);
+			console.log("new target = "+gl.target_frame+" / "+queue.length);
 		}
 	}
+	frames_per_update += 1.0;
 
-	setTimeout(render, 20);
+	setTimeout(render, 50);
 }
 
 function initShaders(gl, vert_source, frag_source) {
