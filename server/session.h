@@ -57,11 +57,13 @@ public:
 
 	/**
 	 * start responding to http requests
+	 *
+	 * return true if startup was sucsessful
 	 */
-	void start() {
+	bool start() {
 		if (this->state != session_state::initial) {
 			std::cout << "error: cannot start again" << std::endl;
-			return;
+			return false;
 		}
 
 		start_time = std::chrono::high_resolution_clock::now();
@@ -71,15 +73,16 @@ public:
 
 		boost::system::error_code ec;
 		socket_.handshake(boost::asio::ssl::stream_base::server, ec);
-		if (!ec) {
-			this->state = session_state::idle;
-			start_write_thread();
-			do_read();
-		}
-		else {
+		if (ec) {
 			std::cout << "handshake failure" << std::endl;
 			this->state = session_state::stopped;
+			return false;
 		}
+
+		this->state = session_state::idle;
+		start_write_thread();
+		do_read();
+		return true;
 	}
 
 	/**

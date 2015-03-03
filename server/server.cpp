@@ -20,13 +20,12 @@ void server::do_accept() {
 
 	acceptor_.async_accept(s->socket(),
 		[this, s](boost::system::error_code ec) {
-			if (!ec) {
 
-				// start session and add to list
+			// start session and add to list
+			if (!ec && s->start()) {
 				session_lock.lock();
 				sessions.push_back(s);
 				session_lock.unlock();
-				s->start();
 			}
 			do_accept();
 		});
